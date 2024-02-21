@@ -1,3 +1,5 @@
+//List file
+
 package app.main.shoppingsist
 
 import androidx.compose.foundation.BorderStroke
@@ -24,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,18 +36,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-data class Items(
-    val id : Int,
-    var name : String,
-    var quantity : Int,
-    var isEditing : Boolean)
-
 @Composable
 fun ShoppingList() {
-    var setItems by remember{ mutableStateOf(listOf<Items>()) }
+
+    var setItems by remember{ mutableStateOf(listOf<Products>()) }
     var showDialog by remember { mutableStateOf(false)}
     var itemName by remember { mutableStateOf("")}
     var itemQuantity by remember { mutableStateOf("")}
+
+    LaunchedEffect(Unit) {
+        setItems = MainActivity.database.productDao().getAllProducts()
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -70,7 +72,7 @@ fun ShoppingList() {
                         val editedItem = setItems.find { it.id == item.id }
                         editedItem?.let {
                             it.name = editedName
-                            it.quantity = editedQuantity
+                            it.count = editedQuantity
                         }
                     })
                 } else {
@@ -94,15 +96,15 @@ fun ShoppingList() {
              confirmButton = {
                  Row (modifier = Modifier
                      .fillMaxWidth()
-                     .padding(6.dp), 
+                     .padding(6.dp),
                      horizontalArrangement = Arrangement.SpaceBetween){
                      Button(
                          onClick = {
                              if (itemName.isNotBlank()) {
-                                 val newItem = Items(
+                                 val newItem = Products(
                                      id = setItems.size + 1,
                                      name = itemName,
-                                     quantity = itemQuantity.toInt(),
+                                     count = itemQuantity.toInt(),
                                      isEditing = false
                                  )
                                  setItems = setItems + newItem
@@ -147,9 +149,9 @@ fun ShoppingList() {
 }
 
 @Composable
-fun ShoppingListEditor(item: Items, onEditComplete: (String, Int) -> Unit) {
+fun ShoppingListEditor(item: Products, onEditComplete: (String, Int) -> Unit) {
     var editedName by remember { mutableStateOf(item.name)}
-    var editedQuantity by remember { mutableStateOf(item.quantity.toString())}
+    var editedQuantity by remember { mutableStateOf(item.count.toString())}
     var isEditing by remember { mutableStateOf(item.isEditing)}
 
     Row(
@@ -190,7 +192,7 @@ fun ShoppingListEditor(item: Items, onEditComplete: (String, Int) -> Unit) {
 
 @Composable
 fun ShoppingListItem(
-    item: Items,
+    item: Products,
     onEditClick: () -> Unit,
     onDeleteClick : () -> Unit
     ) {
@@ -205,7 +207,7 @@ fun ShoppingListItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ){
         Text(text = item.name, modifier = Modifier.padding(6.dp))
-        Text(text = "Քանակ: ${item.quantity}", modifier = Modifier.padding(6.dp))
+        Text(text = "Քանակ: ${item.count}", modifier = Modifier.padding(6.dp))
         Row(modifier = Modifier.padding(6.dp)) {
             IconButton(onClick = onEditClick) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)
