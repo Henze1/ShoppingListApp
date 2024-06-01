@@ -1,4 +1,4 @@
-package app.main.shoppingsist.langsupport
+package app.main.shoppinglist.langsupport
 
 enum class Languages {
     EN, RU, AM

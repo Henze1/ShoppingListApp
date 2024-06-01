@@ -1,6 +1,7 @@
-package app.main.shoppingsist.langsupport
+package app.main.shoppinglist.langsupport
 
 open class Language {
+    var langName: String = ""
     var newItem: String = ""
     var name: String = ""
     var count: String = ""
@@ -8,4 +9,5 @@ open class Language {
     var save: String = ""
     var cancel: String = ""
     var language: String = ""
+    var flag: Int = 0
 }

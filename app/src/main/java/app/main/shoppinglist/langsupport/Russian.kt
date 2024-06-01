@@ -1,7 +1,10 @@
-package app.main.shoppingsist.langsupport
+package app.main.shoppinglist.langsupport
+
+import app.main.shoppinglist.R
 
 class Russian: Language() {
     init {
+        langName = "Русский"
         newItem = "Новый элемент"
         name = "Название"
         count = "Количество"
@@ -9,5 +12,6 @@ class Russian: Language() {
         save = "Сохранить"
         cancel = "Отменить"
         language = "Язык"
+        flag = R.drawable.ru
     }
 }

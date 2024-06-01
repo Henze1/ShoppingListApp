@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "app.main.shoppingsist"
+    namespace = "app.main.shoppinglist"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "app.main.shoppingsist"
+        applicationId = "app.main.shoppinglist"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -60,6 +60,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.1")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -68,9 +69,11 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    val roomVersion = "2.6.1"
 
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("io.coil-kt:coil:2.6.0")
+    implementation("androidx.room:room-runtime:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+
+    //noinspection KaptUsageInsteadOfKsp
+    kapt("androidx.room:room-compiler:$roomVersion")
 }

@@ -1,4 +1,4 @@
-package app.main.shoppingsist
+package app.main.shoppinglist
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

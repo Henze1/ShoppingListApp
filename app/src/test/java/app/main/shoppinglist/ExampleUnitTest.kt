@@ -1,4 +1,4 @@
-package app.main.shoppingsist
+package app.main.shoppinglist
 
 import org.junit.Test
 

@@ -1,5 +1,6 @@
-package app.main.shoppingsist
+package app.main.shoppinglist
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,12 +11,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -38,14 +40,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import app.main.shoppingsist.langsupport.English
-import app.main.shoppingsist.langsupport.Language
-import app.main.shoppingsist.viewmodels.LangViewModel
+import androidx.core.text.isDigitsOnly
+import app.main.shoppinglist.databases.AppDatabase
+import app.main.shoppinglist.databases.Products
+import app.main.shoppinglist.langsupport.Armenian
+import app.main.shoppinglist.langsupport.English
+import app.main.shoppinglist.langsupport.Language
+import app.main.shoppinglist.langsupport.Russian
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(DelicateCoroutinesApi::class)
 @Composable
-fun ShoppingList() {
+fun ShoppingList(
+    database: AppDatabase
+) {
 
     var setItems by remember{ mutableStateOf(listOf<Products>()) }
+
     var showDialog by remember { mutableStateOf(false)}
     var itemName by remember { mutableStateOf("")}
     var itemQuantity by remember { mutableStateOf("")}
@@ -53,7 +67,7 @@ fun ShoppingList() {
     var currLanguage: Language by remember { mutableStateOf(English()) }
     var showFlagsDialog by remember { mutableStateOf(false)}
 
-    var langViewModel = LangViewModel()
+    val langList = listOf(English(), Armenian(), Russian())
 
 
     Column(
@@ -74,23 +88,35 @@ fun ShoppingList() {
             items(setItems){
                 item ->
                 if (item.isEditing) {
-                    ShoppingListEditor(item = item, onEditComplete = {
-                        editedName, editedQuantity ->
-                        setItems = setItems.map { it.copy(isEditing = false) }
-                        val editedItem = setItems.find { it.id == item.id }
-                        editedItem?.let {
-                            it.name = editedName
-                            it.count = editedQuantity
+                    ShoppingListEditor(
+                        lang = currLanguage,
+                        item = item,
+                        onEditComplete = {
+                            editedName, editedQuantity ->
+                            setItems = setItems.map { it.copy(isEditing = false) }
+                            val editedItem = setItems.find { it.id == item.id }
+                            editedItem?.let {
+                                it.name = editedName
+                                it.count = editedQuantity
+                                GlobalScope.launch {
+                                    database.productsDao().upsertProduct(product = it)
+                                }
+                            }
                         }
-                    })
+                    )
                 } else {
                     ShoppingListItem(
+                        lang = currLanguage,
                         item = item,
                         onEditClick = {
                             setItems = setItems.
-                            map { it.copy(isEditing = it.id == item.id) }},
+                            map { it.copy(isEditing = it.id == item.id) }
+                        },
                         onDeleteClick = {
                             setItems -= item
+                            GlobalScope.launch {
+                                database.productsDao().deleteProduct(product = item)
+                            }
                         }
                     )
                 }
@@ -121,15 +147,15 @@ fun ShoppingList() {
                                  itemQuantity = ""
                              }
                          }) {
-                         Text(text = "Ավելացնել")
+                         Text(text = currLanguage.add)
                      }
                      Button(
                          onClick = { showDialog = false }) {
-                         Text(text = "Չեղարկել")
+                         Text(text = currLanguage.cancel)
                      }
                  }
              },
-             title = { Text(text = "Ավելացնել")},
+             title = { Text(text = currLanguage.add)},
              text = {
                  Column {
                      OutlinedTextField(
@@ -139,16 +165,16 @@ fun ShoppingList() {
                          modifier = Modifier
                              .fillMaxWidth()
                              .padding(6.dp),
-                         label = { Text(text = "Անուն") }
+                         label = { Text(text = currLanguage.name) }
                      )
                      OutlinedTextField(
                          value = itemQuantity,
-                         onValueChange = { itemQuantity = it },
+                         onValueChange = { itemQuantity = if (it.isDigitsOnly()) it else 0.toString() },
                          singleLine = true,
                          modifier = Modifier
                              .fillMaxWidth()
                              .padding(6.dp),
-                         label = { Text(text = "Քանակ") }
+                         label = { Text(text = currLanguage.count) }
                      )
                  }
              }
@@ -164,20 +190,21 @@ fun ShoppingList() {
         FloatingActionButton(
             containerColor = Color.Gray,
             contentColor = Color.White,
-            shape = CircleShape,
+            shape = RoundedCornerShape(10),
             onClick = {
                 showFlagsDialog = true
             },
             modifier = Modifier
                 .padding(16.dp)
-                .size(50.dp)
+                .width(50.dp)
+                .height(27.dp)
             ,
             content = {
                 Image(
                     modifier = Modifier
                         .size(50.dp),
-                    painter = painterResource(R.drawable.am),
-                    contentDescription = "Email",
+                    painter = painterResource(currLanguage.flag),
+                    contentDescription = currLanguage.language,
                 )
             }
         )
@@ -187,54 +214,33 @@ fun ShoppingList() {
         AlertDialog(
             onDismissRequest = { showFlagsDialog = false },
             confirmButton = {
-                Row (modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween){
-                    Button(
-                        onClick = {
-                            if (itemName.isNotBlank()) {
-                                val newItem = Products(
-                                    id = setItems.size + 1,
-                                    name = itemName,
-                                    count = itemQuantity.toInt(),
-                                    isEditing = false
-                                )
-                                setItems = setItems + newItem
-                                showFlagsDialog = false
-                                itemName = ""
-                                itemQuantity = ""
+                LazyColumn {
+                    items(
+                        key = { it.langName },
+                        items = langList
+                    ) { lang ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Image(
+                                painter = painterResource(id = lang.flag),
+                                contentDescription = lang.langName,
+                                modifier = Modifier
+                                    .size(50.dp)
+                            )
+
+                            Button(
+                                onClick = {
+                                    currLanguage = lang
+                                    showFlagsDialog = false
+                                }) {
+                                Text(text = lang.langName)
                             }
-                        }) {
-                        Text(text = "Ավելացնել")
+                        }
                     }
-                    Button(
-                        onClick = { showFlagsDialog = false }) {
-                        Text(text = "Չեղարկել")
-                    }
-                }
-            },
-            title = { Text(text = "Ավելացնել")},
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = itemName,
-                        onValueChange = { itemName = it },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(6.dp),
-                        label = { Text(text = "Անուն") }
-                    )
-                    OutlinedTextField(
-                        value = itemQuantity,
-                        onValueChange = { itemQuantity = it },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(6.dp),
-                        label = { Text(text = "Քանակ") }
-                    )
                 }
             }
         )
@@ -243,6 +249,7 @@ fun ShoppingList() {
 
 @Composable
 fun ShoppingListEditor(
+    lang: Language,
     item: Products,
     onEditComplete: (String, Int) -> Unit
 ) {
@@ -281,13 +288,14 @@ fun ShoppingListEditor(
                 isEditing = false
                 onEditComplete(editedName, editedQuantity.toIntOrNull() ?: 1)
         }) {
-            Text(text = "Պահպանել")
+            Text(text = lang.save)
         }
     }
 }
 
 @Composable
 fun ShoppingListItem(
+    lang: Language,
     item: Products,
     onEditClick: () -> Unit,
     onDeleteClick : () -> Unit
@@ -303,7 +311,7 @@ fun ShoppingListItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ){
         Text(text = item.name, modifier = Modifier.padding(6.dp))
-        Text(text = "Քանակ: ${item.count}", modifier = Modifier.padding(6.dp))
+        Text(text = "${lang.count}: ${item.count}", modifier = Modifier.padding(6.dp))
         Row(modifier = Modifier.padding(6.dp)) {
             IconButton(onClick = onEditClick) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)

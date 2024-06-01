@@ -1,7 +1,11 @@
-package app.main.shoppingsist.langsupport
+package app.main.shoppinglist.langsupport
+
+import app.main.shoppinglist.R
+
 
 class Armenian: Language() {
     init {
+        langName = "Հայերեն"
         newItem = "Նոր ապրանք"
         name = "Անուն"
         count = "Քանակ"
@@ -9,5 +13,6 @@ class Armenian: Language() {
         save = "Պահպանել"
         cancel = "Չեղարկել"
         language = "Լեզու"
+        flag = R.drawable.am
     }
 }
