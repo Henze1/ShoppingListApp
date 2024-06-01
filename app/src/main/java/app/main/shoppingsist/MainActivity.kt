@@ -14,16 +14,8 @@ import app.main.shoppingsist.ui.theme.ShoppingListAppTheme
 
 class MainActivity : ComponentActivity() {
 
-    companion object{
-        lateinit var database : AppDatabase
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        database = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "products_database"
-        ).build()
         setContent {
             ShoppingListAppTheme {
                 Surface(
