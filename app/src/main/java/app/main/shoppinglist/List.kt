@@ -41,12 +41,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
-import app.main.shoppinglist.databases.AppDatabase
 import app.main.shoppinglist.databases.Products
 import app.main.shoppinglist.langsupport.Armenian
 import app.main.shoppinglist.langsupport.English
 import app.main.shoppinglist.langsupport.Language
 import app.main.shoppinglist.langsupport.Russian
+import app.main.shoppinglist.viewmodels.ProductViewModel
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -55,7 +55,7 @@ import kotlinx.coroutines.launch
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun ShoppingList(
-    database: AppDatabase
+    viewmodel: ProductViewModel
 ) {
 
     var setItems by remember{ mutableStateOf(listOf<Products>()) }
@@ -99,7 +99,7 @@ fun ShoppingList(
                                 it.name = editedName
                                 it.count = editedQuantity
                                 GlobalScope.launch {
-                                    database.productsDao().upsertProduct(product = it)
+                                    viewmodel.upsert(it)
                                 }
                             }
                         }
@@ -115,7 +115,7 @@ fun ShoppingList(
                         onDeleteClick = {
                             setItems -= item
                             GlobalScope.launch {
-                                database.productsDao().deleteProduct(product = item)
+                                viewmodel.delete(item)
                             }
                         }
                     )
