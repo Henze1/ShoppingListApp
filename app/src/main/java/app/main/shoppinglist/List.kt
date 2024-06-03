@@ -86,10 +86,12 @@ fun ShoppingList(
                 .fillMaxSize()
                 .padding(6.dp)
         ) {
-            items(setItems){
+            items(state.products){
                 item ->
-                if (item.isEditing) {
+                if (state.isAddingProduct) {
                     ShoppingListEditor(
+                        state = state,
+                        onEvent = onEvent,
                         lang = currLanguage,
                         item = item,
                         onEditComplete = {
@@ -102,10 +104,12 @@ fun ShoppingList(
                                 //TODO: update database
 
                             }
-                        }
+                        },
                     )
                 } else {
                     ShoppingListItem(
+                        state = state,
+                        onEvent = onEvent,
                         lang = currLanguage,
                         item = item,
                         onEditClick = {
@@ -247,6 +251,8 @@ fun ShoppingList(
 
 @Composable
 fun ShoppingListEditor(
+    state: ProductState,
+    onEvent: (ProductEvent) -> Unit,
     lang: Language,
     item: Products,
     onEditComplete: (String, Int) -> Unit
@@ -293,6 +299,8 @@ fun ShoppingListEditor(
 
 @Composable
 fun ShoppingListItem(
+    state: ProductState,
+    onEvent: (ProductEvent) -> Unit,
     lang: Language,
     item: Products,
     onEditClick: () -> Unit,
