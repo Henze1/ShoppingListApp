@@ -3,21 +3,40 @@ package app.main.shoppinglist
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
 import app.main.shoppinglist.databases.AppDatabase
-import app.main.shoppinglist.databases.ProductRepository
 import app.main.shoppinglist.ui.theme.ShoppingListAppTheme
 import app.main.shoppinglist.viewmodels.ProductViewModel
-import app.main.shoppinglist.viewmodels.ProductsViewModelFactory
 
+@Suppress("UNCHECKED_CAST")
 class MainActivity : ComponentActivity() {
 
+    private val db by lazy{
+        Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "contact.db"
+        ).build()
+    }
+
+    private val viewModel by viewModels<ProductViewModel>(
+        factoryProducer = {
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return ProductViewModel(db.productsDao()) as T
+                }
+            }
+        }
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -28,12 +47,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val context = LocalContext.current
-                    val database = remember { AppDatabase.getDatabase(context) }
-                    val repository = remember { ProductRepository(database.productsDao()) }
-                    val viewModel: ProductViewModel = viewModel(factory = ProductsViewModelFactory(repository))
-
-                    ShoppingList(viewModel)
+                    val state by viewModel.state.collectAsState()
+                    ShoppingList(state = state, onEvent = viewModel::onEvent)
                 }
             }
         }
