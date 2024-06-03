@@ -72,6 +72,16 @@ class ProductViewModel(
                     name = event.name
                 ) }
             }
+            ProductEvent.ShowDialog -> {
+                _state.update { it.copy(
+                    isAddingProduct = true
+                ) }
+            }
+            ProductEvent.HideDialog -> {
+                _state.update { it.copy(
+                    isAddingProduct = false
+                ) }
+            }
         }
     }
 }

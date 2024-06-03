@@ -48,10 +48,8 @@ import app.main.shoppinglist.langsupport.Armenian
 import app.main.shoppinglist.langsupport.English
 import app.main.shoppinglist.langsupport.Language
 import app.main.shoppinglist.langsupport.Russian
-import kotlinx.coroutines.DelicateCoroutinesApi
 
 @SuppressLint("CoroutineCreationDuringComposition")
-@OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun ShoppingList(
     state: ProductState,
@@ -75,7 +73,10 @@ fun ShoppingList(
         verticalArrangement = Arrangement.Center
     ) {
         Button(
-            onClick = { showDialog = true },
+            onClick = {
+                showDialog = true
+                onEvent(ProductEvent.ShowDialog)
+            },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
            Text(text = "+")
@@ -99,6 +100,7 @@ fun ShoppingList(
                                 it.name = editedName
                                 it.count = editedQuantity
                                 //TODO: update database
+
                             }
                         }
                     )
