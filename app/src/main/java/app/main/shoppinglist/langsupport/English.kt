@@ -4,6 +4,7 @@ import app.main.shoppinglist.R
 
 class English: Language() {
     init{
+        langClass = "English()"
         langName = "English"
         newItem = "New Item"
         name = "Name"

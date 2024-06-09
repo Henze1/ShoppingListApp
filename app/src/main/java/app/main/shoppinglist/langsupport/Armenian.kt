@@ -5,6 +5,7 @@ import app.main.shoppinglist.R
 
 class Armenian: Language() {
     init {
+        langClass = "Armenian()"
         langName = "Հայերեն"
         newItem = "Նոր Ապրանք"
         name = "Անուն"

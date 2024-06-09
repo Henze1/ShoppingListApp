@@ -1,6 +1,7 @@
 package app.main.shoppinglist.langsupport
 
 open class Language {
+    var langClass: String = ""
     var langName: String = ""
     var newItem: String = ""
     var name: String = ""

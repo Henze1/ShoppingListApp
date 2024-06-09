@@ -1,6 +1,7 @@
 package app.main.shoppinglist
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
@@ -37,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import app.main.shoppinglist.databases.ProductEvent
@@ -46,6 +49,7 @@ import app.main.shoppinglist.langsupport.Armenian
 import app.main.shoppinglist.langsupport.English
 import app.main.shoppinglist.langsupport.Language
 import app.main.shoppinglist.langsupport.Russian
+import java.io.File
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -58,11 +62,27 @@ fun ShoppingList(
 
     setItems = state.products
 
-    var currLanguage: Language by remember { mutableStateOf(English()) }
+    val context: Context = LocalContext.current
+    lateinit var file: File
+    try {
+        file = File(context.filesDir, "lang.txt")
+    } catch (e: Exception) {
+        file.createNewFile()
+        file.writeText("English()")
+    }
+    val currLang: String = try {
+        file.readText()
+    } catch (e: Exception) {
+        "English()"
+    }
+
     var showFlagsDialog by remember { mutableStateOf(false)}
 
     val langList = listOf(English(), Armenian(), Russian())
 
+    var currLanguage: Language by remember { mutableStateOf(currLang.let { lang ->
+        langList.find { it.langClass == lang } ?: English()
+    }) }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -93,7 +113,7 @@ fun ShoppingList(
                             val editedItem = setItems.find { it.id == item.id }
                             editedItem?.let {
                                 it.name = editedName
-                                it.count = editedQuantity.toString()
+                                it.count = editedQuantity
                                 onEvent(ProductEvent.SaveProduct)
                             }
                         },
@@ -236,6 +256,17 @@ fun ShoppingList(
                                 onClick = {
                                     currLanguage = lang
                                     showFlagsDialog = false
+
+                                    if (file.exists() && file.length() > 0) {
+                                        val line = file.readLines().toMutableList()
+                                        line[0] = lang.langClass
+
+                                        file.writeText(line.joinToString("\n"))
+                                    } else {
+                                        file.createNewFile()
+                                        file.writeText(lang.langClass)
+                                    }
+
                                 }) {
                                 Text(text = lang.langName)
                             }
@@ -252,7 +283,7 @@ fun ShoppingListEditor(
     state: ProductState,
     onEvent: (ProductEvent) -> Unit,
     lang: Language,
-    onEditComplete: (String, Int) -> Unit
+    onEditComplete: (String, String) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -260,7 +291,8 @@ fun ShoppingListEditor(
             .background(Color.White)
             .border(
                 border = BorderStroke(2.dp, Color(0xFF686a6c)),
-                shape = RoundedCornerShape(25))
+                shape = RoundedCornerShape(25)
+            )
             .padding(6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly)
     {
@@ -290,7 +322,7 @@ fun ShoppingListEditor(
         Button(
             onClick = {
                 onEvent(ProductEvent.SaveProduct)
-                onEditComplete(state.name, state.count.toInt())
+                onEditComplete(state.name, state.count)
         }) {
             Text(text = lang.save)
         }
@@ -315,14 +347,16 @@ fun ShoppingListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
-        Text(text = "${lang.name}: ${item.name}", modifier = Modifier.padding(16.dp))
-        Text(text = "${lang.count}: ${item.count}", modifier = Modifier.padding(6.dp))
+        Column {
+            Text(text = "${lang.name}: ${item.name}", modifier = Modifier.padding(16.dp))
+            Text(text = "${lang.count}: ${item.count}", modifier = Modifier.padding(16.dp))
+        }
         Row(modifier = Modifier.padding(6.dp)) {
-//            IconButton(
-//                onClick = onEditClick,
-//            ) {
-//                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-//            }
+            IconButton(
+                onClick = onEditClick,
+            ) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+            }
             IconButton(onClick = onDeleteClick) {
                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
             }
