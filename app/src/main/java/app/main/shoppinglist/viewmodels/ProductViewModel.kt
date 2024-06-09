@@ -46,7 +46,7 @@ class ProductViewModel(
             ProductEvent.SaveProduct -> {
                 val name = state.value.name
                 val count = state.value.count
-                if (name.isBlank() || count <= 0) {
+                if (name.isBlank() || count.isBlank()) {
                     return
                 }
 
@@ -59,7 +59,7 @@ class ProductViewModel(
                 }
                 _state.update { it.copy(
                     name = "",
-                    count = 0
+                    count = ""
                 ) }
             }
             is ProductEvent.SetCount -> {

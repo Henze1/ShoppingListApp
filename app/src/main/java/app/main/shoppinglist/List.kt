@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -39,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.main.shoppinglist.databases.ProductEvent
 import app.main.shoppinglist.databases.ProductState
@@ -95,7 +93,7 @@ fun ShoppingList(
                             val editedItem = setItems.find { it.id == item.id }
                             editedItem?.let {
                                 it.name = editedName
-                                it.count = editedQuantity
+                                it.count = editedQuantity.toString()
                                 onEvent(ProductEvent.SaveProduct)
                             }
                         },
@@ -168,13 +166,12 @@ fun ShoppingList(
                          label = { Text(text = currLanguage.name) }
                      )
                      OutlinedTextField(
-                         value = "${state.count}",
-                         onValueChange = { onEvent(ProductEvent.SetCount(it.toInt()))},
+                         value = state.count,
+                         onValueChange = { onEvent(ProductEvent.SetCount(it))},
                          singleLine = true,
                          modifier = Modifier
                              .fillMaxWidth()
                              .padding(6.dp),
-                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                          label = { Text(text = currLanguage.count) }
                      )
                  }
@@ -279,9 +276,9 @@ fun ShoppingListEditor(
                     .padding(6.dp)
             )
             BasicTextField(
-                value = state.count.toString(),
+                value = state.count,
                 onValueChange = {
-                    onEvent(ProductEvent.SetCount(it.toIntOrNull() ?: 1))
+                    onEvent(ProductEvent.SetCount(it))
                 },
                 singleLine = true,
                 modifier = Modifier
@@ -293,7 +290,7 @@ fun ShoppingListEditor(
         Button(
             onClick = {
                 onEvent(ProductEvent.SaveProduct)
-                onEditComplete(state.name, state.count)
+                onEditComplete(state.name, state.count.toInt())
         }) {
             Text(text = lang.save)
         }
@@ -318,7 +315,7 @@ fun ShoppingListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
-        Text(text = item.name, modifier = Modifier.padding(16.dp))
+        Text(text = "${lang.name}: ${item.name}", modifier = Modifier.padding(16.dp))
         Text(text = "${lang.count}: ${item.count}", modifier = Modifier.padding(6.dp))
         Row(modifier = Modifier.padding(6.dp)) {
 //            IconButton(
