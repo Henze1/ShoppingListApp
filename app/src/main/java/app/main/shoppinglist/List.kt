@@ -20,9 +20,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
@@ -39,8 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.text.isDigitsOnly
 import app.main.shoppinglist.databases.ProductEvent
 import app.main.shoppinglist.databases.ProductState
 import app.main.shoppinglist.databases.Products
@@ -58,9 +58,7 @@ fun ShoppingList(
 
     var setItems by remember{ mutableStateOf(listOf<Products>()) }
 
-    var showDialog by remember { mutableStateOf(false)}
-    var itemName by remember { mutableStateOf("")}
-    var itemQuantity by remember { mutableStateOf("")}
+    setItems = state.products
 
     var currLanguage: Language by remember { mutableStateOf(English()) }
     var showFlagsDialog by remember { mutableStateOf(false)}
@@ -74,51 +72,48 @@ fun ShoppingList(
     ) {
         Button(
             onClick = {
-                showDialog = true
                 onEvent(ProductEvent.ShowDialog)
             },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-           Text(text = "+")
+           Text(text = currLanguage.add)
         }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(6.dp)
         ) {
-            items(state.products){
+            items(setItems){
                 item ->
-                if (state.isAddingProduct) {
+                if (item.isEditing) {
                     ShoppingListEditor(
                         state = state,
                         onEvent = onEvent,
                         lang = currLanguage,
-                        item = item,
-                        onEditComplete = {
-                            editedName, editedQuantity ->
+                        onEditComplete = { editedName, editedQuantity ->
                             setItems = setItems.map { it.copy(isEditing = false) }
                             val editedItem = setItems.find { it.id == item.id }
                             editedItem?.let {
                                 it.name = editedName
                                 it.count = editedQuantity
-                                //TODO: update database
-
+                                onEvent(ProductEvent.SaveProduct)
                             }
                         },
                     )
                 } else {
                     ShoppingListItem(
-                        state = state,
-                        onEvent = onEvent,
                         lang = currLanguage,
                         item = item,
                         onEditClick = {
+                            item.isEditing = true
                             setItems = setItems.
                             map { it.copy(isEditing = it.id == item.id) }
+                            onEvent(ProductEvent.SetName(item.name))
+                            onEvent(ProductEvent.SetCount(item.count))
                         },
                         onDeleteClick = {
                             setItems -= item
-                            //TODO: update database
+                            onEvent(ProductEvent.DeleteProduct(item))
                         }
                     )
                 }
@@ -126,9 +121,11 @@ fun ShoppingList(
         }
     }
 
-    if (showDialog) {
+    if (state.isAddingProduct) {
          AlertDialog(
-             onDismissRequest = { showDialog = false },
+             onDismissRequest = {
+                 onEvent(ProductEvent.HideDialog)
+             },
              confirmButton = {
                  Row (modifier = Modifier
                      .fillMaxWidth()
@@ -136,33 +133,34 @@ fun ShoppingList(
                      horizontalArrangement = Arrangement.SpaceBetween){
                      Button(
                          onClick = {
-                             if (itemName.isNotBlank()) {
+                             if (state.name.isNotBlank()) {
                                  val newItem = Products(
                                      id = setItems.size + 1,
-                                     name = itemName,
-                                     count = itemQuantity.toInt(),
+                                     name = state.name,
+                                     count = state.count,
                                      isEditing = false
                                  )
                                  setItems = setItems + newItem
-                                 showDialog = false
-                                 itemName = ""
-                                 itemQuantity = ""
+                                 onEvent(ProductEvent.HideDialog)
+                                 onEvent(ProductEvent.SaveProduct)
                              }
                          }) {
                          Text(text = currLanguage.add)
                      }
                      Button(
-                         onClick = { showDialog = false }) {
+                         onClick = {
+                             onEvent(ProductEvent.HideDialog)
+                         }) {
                          Text(text = currLanguage.cancel)
                      }
                  }
              },
-             title = { Text(text = currLanguage.add)},
+             title = { Text(text = "${currLanguage.add} ${currLanguage.newItem}")},
              text = {
                  Column {
                      OutlinedTextField(
-                         value = itemName,
-                         onValueChange = { itemName = it },
+                         value = state.name,
+                         onValueChange = { onEvent(ProductEvent.SetName(it)) },
                          singleLine = true,
                          modifier = Modifier
                              .fillMaxWidth()
@@ -170,12 +168,13 @@ fun ShoppingList(
                          label = { Text(text = currLanguage.name) }
                      )
                      OutlinedTextField(
-                         value = itemQuantity,
-                         onValueChange = { itemQuantity = if (it.isDigitsOnly()) it else 0.toString() },
+                         value = "${state.count}",
+                         onValueChange = { onEvent(ProductEvent.SetCount(it.toInt()))},
                          singleLine = true,
                          modifier = Modifier
                              .fillMaxWidth()
                              .padding(6.dp),
+                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                          label = { Text(text = currLanguage.count) }
                      )
                  }
@@ -214,7 +213,9 @@ fun ShoppingList(
 
     if (showFlagsDialog) {
         AlertDialog(
-            onDismissRequest = { showFlagsDialog = false },
+            onDismissRequest = {
+                showFlagsDialog = false
+            },
             confirmButton = {
                 LazyColumn {
                     items(
@@ -254,32 +255,34 @@ fun ShoppingListEditor(
     state: ProductState,
     onEvent: (ProductEvent) -> Unit,
     lang: Language,
-    item: Products,
     onEditComplete: (String, Int) -> Unit
 ) {
-    var editedName by remember { mutableStateOf(item.name)}
-    var editedQuantity by remember { mutableStateOf(item.count.toString())}
-    var isEditing by remember { mutableStateOf(item.isEditing)}
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Gray)
+            .background(Color.White)
+            .border(
+                border = BorderStroke(2.dp, Color(0xFF686a6c)),
+                shape = RoundedCornerShape(25))
             .padding(6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly)
     {
         Column {
             BasicTextField(
-                value = editedName,
-                onValueChange = {editedName = it},
+                value = state.name,
+                onValueChange = {
+                    onEvent(ProductEvent.SetName(it))
+                },
                 singleLine = true,
                 modifier = Modifier
                     .wrapContentSize()
                     .padding(6.dp)
             )
             BasicTextField(
-                value = editedQuantity,
-                onValueChange = {editedQuantity = it},
+                value = state.count.toString(),
+                onValueChange = {
+                    onEvent(ProductEvent.SetCount(it.toIntOrNull() ?: 1))
+                },
                 singleLine = true,
                 modifier = Modifier
                     .wrapContentSize()
@@ -289,8 +292,8 @@ fun ShoppingListEditor(
         
         Button(
             onClick = {
-                isEditing = false
-                onEditComplete(editedName, editedQuantity.toIntOrNull() ?: 1)
+                onEvent(ProductEvent.SaveProduct)
+                onEditComplete(state.name, state.count)
         }) {
             Text(text = lang.save)
         }
@@ -299,8 +302,6 @@ fun ShoppingListEditor(
 
 @Composable
 fun ShoppingListItem(
-    state: ProductState,
-    onEvent: (ProductEvent) -> Unit,
     lang: Language,
     item: Products,
     onEditClick: () -> Unit,
@@ -314,14 +315,17 @@ fun ShoppingListItem(
                 border = BorderStroke(2.dp, Color(0xFF686a6c)),
                 shape = RoundedCornerShape(25)
             ),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ){
-        Text(text = item.name, modifier = Modifier.padding(6.dp))
+        Text(text = item.name, modifier = Modifier.padding(16.dp))
         Text(text = "${lang.count}: ${item.count}", modifier = Modifier.padding(6.dp))
         Row(modifier = Modifier.padding(6.dp)) {
-            IconButton(onClick = onEditClick) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-            }
+//            IconButton(
+//                onClick = onEditClick,
+//            ) {
+//                Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+//            }
             IconButton(onClick = onDeleteClick) {
                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
             }

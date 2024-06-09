@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
-            "contact.db"
+            "shoppingList.db"
         ).build()
     }
 

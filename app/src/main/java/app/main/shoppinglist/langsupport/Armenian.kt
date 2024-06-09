@@ -6,7 +6,7 @@ import app.main.shoppinglist.R
 class Armenian: Language() {
     init {
         langName = "Հայերեն"
-        newItem = "Նոր ապրանք"
+        newItem = "Նոր Ապրանք"
         name = "Անուն"
         count = "Քանակ"
         add = "Ավելացնել"
